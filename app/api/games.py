@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/games", tags=["games"])
 
 @router.post("/", response_model=JobOut, status_code=202)
 async def create_job(
-    data: GameCreate,
+    data: GameCreate,  # ← CORREGIT: ara sí que té "data:"
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user)
 ):
@@ -22,7 +22,7 @@ async def create_job(
     await db.commit()
     await db.refresh(job)
     
-    # TODO: Descomentar quan Celery estigui configurat
+    # Celery: comentat temporalment fins que estigui configurat
     # from app.tasks.tasks import process_game_job
     # process_game_job.delay(str(job.id), data.model_dump())
     
@@ -37,7 +37,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Tasca no trobada")
     
-    # Calcula el progress correctament (comparant enums, no strings)
+    # Calcula el progress correctament
     progress_map = {
         JobStatus.QUEUED: 10,
         JobStatus.PROCESSING: 50,
@@ -46,4 +46,13 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     }
     progress = progress_map.get(job.status, 0)
     
-    return JobStatusOut
+    return JobStatusOut(
+        job_id=job.id,
+        status=job.status,
+        progress=progress,
+        result_url=job.result_url,
+        preview_url=job.preview_url,
+        error=job.error,
+        created_at=job.created_at,
+        updated_at=job.updated_at
+    )
