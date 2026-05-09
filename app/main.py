@@ -1,49 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import get_settings
-from app.api import games
-from app.database import engine, Base
-import structlog
+import os
 
-# Configura structlog (logging estructurat)
-structlog.configure(
-    processors=[
-        structlog.processors.add_log_level,
-        structlog.processors.JSONRenderer()
-    ],
-    wrapper_class=structlog.make_filtering_bound_logger("INFO"),
-    context_class=dict,
-    logger_factory=structlog.PrintLoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+app = FastAPI(title="Prompt It Games", version="1.0.0")
 
-settings = get_settings()
-
-app = FastAPI(title=settings.APP_NAME, version="1.0.0")
-
-# Middleware CORS
+# CORS simplificat
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Inclou el router dels jocs
-app.include_router(games.router)
-
-# Event d'inici: crea les taules a la BD
-@app.on_event("startup")
-async def startup():
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        structlog.get_logger().info("startup_complete", database=settings.DATABASE_URL)
-    except Exception as e:
-        structlog.get_logger().error("startup_failed", error=str(e))
-        raise
-
-# Endpoint de salut
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
+
+@app.get("/")
+async def root():
+    return {"message": "API is running!"}
