@@ -3,23 +3,47 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.api import games
 from app.database import engine, Base
-import structlog, sentry_sdk
+import structlog
+
+# Configura structlog (logging estructurat)
+structlog.configure(
+    processors=[
+        structlog.processors.add_log_level,
+        structlog.processors.JSONRenderer()
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger("INFO"),
+    context_class=dict,
+    logger_factory=structlog.PrintLoggerFactory(),
+    cache_logger_on_first_use=True,
+)
 
 settings = get_settings()
-structlog.configure(processors=[structlog.processors.JSONRenderer()])
-sentry_sdk.init(dsn="https://...", traces_sample_rate=1.0)
 
 app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 
-app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS.split(","), allow_methods=["*"], allow_headers=["*"])
+# Middleware CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inclou el router dels jocs
 app.include_router(games.router)
 
+# Event d'inici: crea les taules a la BD
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    structlog.get_logger().info("startup_complete")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        structlog.get_logger().info("startup_complete", database=settings.DATABASE_URL)
+    except Exception as e:
+        structlog.get_logger().error("startup_failed", error=str(e))
+        raise
 
+# Endpoint de salut
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
