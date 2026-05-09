@@ -3,19 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.api import games
 from app.database import engine, Base
-import structlog
-
-# Configura logging
-structlog.configure(
-    processors=[
-        structlog.processors.add_log_level,
-        structlog.processors.JSONRenderer()
-    ],
-    wrapper_class=structlog.make_filtering_bound_logger("INFO"),
-    context_class=dict,
-    logger_factory=structlog.PrintLoggerFactory(),
-    cache_logger_on_first_use=True,
-)
 
 settings = get_settings()
 
@@ -38,9 +25,9 @@ async def startup():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        structlog.get_logger().info("startup_complete")
+        print("✅ Startup complete - Database tables created")
     except Exception as e:
-        structlog.get_logger().error("startup_failed", error=str(e))
+        print(f"❌ Startup failed: {e}")
         raise
 
 # Health check
