@@ -1,21 +1,38 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from app.config import get_settings
+from app.api import games
+from app.database import engine, Base
+import structlog
 
-app = FastAPI(title="Prompt It Games", version="1.0.0")
+# Configura logging
+structlog.configure(
+    processors=[
+        structlog.processors.add_log_level,
+        structlog.processors.JSONRenderer()
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger("INFO"),
+    context_class=dict,
+    logger_factory=structlog.PrintLoggerFactory(),
+    cache_logger_on_first_use=True,
+)
 
-# CORS simplificat
+settings = get_settings()
+
+app = FastAPI(title=settings.APP_NAME, version="1.0.0")
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "version": "1.0.0"}
+# Inclou el router
+app.include_router(games.router)
 
-@app.get("/")
-async def root():
-    return {"message": "API is running!"}
+# Startup: crea taules a la BD
+@app.on_event("startup")
+async def startup():
+   
