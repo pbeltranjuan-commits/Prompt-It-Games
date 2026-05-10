@@ -4,8 +4,8 @@ from app.config import get_settings
 from app.api import games
 from app.database import engine, Base
 
-# 👇 IMPORTA AQUESTA LÍNIA (És clau!) 👇
-from app.models import GameJob  # Això registra la taula amb SQLAlchemy
+# 👇 IMPORTA ELS MODELS ABANS DE RES MÉS 👇
+import app.models  # Això força que les taules es registrin
 
 settings = get_settings()
 
@@ -26,11 +26,12 @@ app.include_router(games.router)
 @app.on_event("startup")
 async def startup():
     try:
+        print("🔄 Creating database tables...")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        print("✅ Startup complete - Database tables created")
+        print("✅ Database tables created successfully!")
     except Exception as e:
-        print(f"❌ Startup failed: {e}")
+        print(f"❌ Failed to create tables: {e}")
         raise
 
 # Health check
