@@ -4,6 +4,9 @@ from app.config import get_settings
 from app.api import games
 from app.database import engine, Base
 
+# 👇 IMPORTA AQUESTA LÍNIA (És clau!) 👇
+from app.models import GameJob  # Això registra la taula amb SQLAlchemy
+
 settings = get_settings()
 
 app = FastAPI(title=settings.APP_NAME, version="1.0.0")
