@@ -8,11 +8,14 @@ class Settings(BaseSettings):
     REDIS_URL: str
     PYTHON_VERSION: str = "3.11"
     CORS_ORIGINS: str = "*"
-    
-    # 👇 AFEGEIX AQUESTA LÍNIA (Això és el que faltava) 👇
-    RESEND_API_KEY: str = "" 
+    RESEND_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
 
+# Instància global
 settings = Settings()
+
+# Funció que el teu codi necessita importar
+def get_settings() -> Settings:
+    return settings
