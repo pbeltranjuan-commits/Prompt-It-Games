@@ -73,18 +73,19 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 
 # ==============================================================================
 # NOU ENDPOINT: GENERACIÓ COMPLETA + EMAIL (La Màgia Real)
+# NOTA: Autenticació desactivada temporalment per a proves
 # ==============================================================================
 
 @router.post("/generate-full", status_code=202)
 async def generate_full_game(
     theme: str,
     difficulty: str = "medium",
-    user_email: str = "pbeltranjuan@gmail.com",  # Per defecte t'envia a tu
+    user_email: str = "pbeltranjuan@gmail.com",
     db: AsyncSession = Depends(get_db),
-    user_id: str = Depends(get_current_user)
+    # user_id: str = Depends(get_current_user)  # ← COMENTAT PER PROVES
 ):
     """
-    Flux complet:
+    Flux complet (versió de proves sense auth):
     1. Genera cartes i taulers (PNGs 300 DPI)
     2. Crea un ZIP amb tots els assets
     3. L'envia per correu a l'usuari
