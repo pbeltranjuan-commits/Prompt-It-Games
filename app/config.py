@@ -1,39 +1,18 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # Config per a Pydantic v2
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
-    
-    # App
-    APP_NAME: str = "AI Board Game Generator"
-    DEBUG: bool = False
-    LOG_LEVEL: str = "INFO"
-    
-    # Base de dades (OBLIGATÒRIA - sense valor per defecte)
+    APP_NAME: str = "Prompt-It-Games"
     DATABASE_URL: str
-    
-    # Redis (OBLIGATÒRIA)
-    REDIS_URL: str
-    
-    # APIs externes
-    OPENAI_API_KEY: str = ""
-    REPLICATE_API_TOKEN: str = ""
-    
-    # AWS S3
-    S3_BUCKET: str = "ai-games-prod"
-    S3_ENDPOINT: str = "https://s3.amazonaws.com"
-    
-    # Autenticació
     JWT_SECRET: str
-    
-    # CORS
+    OPENAI_API_KEY: str
+    REDIS_URL: str
+    PYTHON_VERSION: str = "3.11"
     CORS_ORIGINS: str = "*"
+    
+    # 👇 AFEGEIX AQUESTA LÍNIA (Això és el que faltava) 👇
+    RESEND_API_KEY: str = "" 
 
-@lru_cache()
-def get_settings():
-    return Settings()
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
