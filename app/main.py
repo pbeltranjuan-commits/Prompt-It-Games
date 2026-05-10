@@ -5,29 +5,28 @@ from app.config import get_settings
 from app.api import games
 from app.database import engine, Base
 
-# 👇 1. FORCEM LA IMPORTACIÓ DELS MODELS 👇
-import app.models 
+# 👇 CLAU: Import explícit de la classe GameJob 👇
+from app.models import GameJob
 
 settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    print("🚀 STARTUP: Initializing database...")
+    print("🚀 STARTUP: Checking database tables...")
     
-    # 👇 2. AIXÒ ÉS CRÍTIC: Ens dirà quines taules ha trobat 👇
-    tables_found = list(Base.metadata.tables.keys())
-    print(f"📦 TAULES DETECTADES: {tables_found}")
+    # Debug: quines taules ha detectat SQLAlchemy?
+    detected = list(Base.metadata.tables.keys())
+    print(f"📦 Tables detected: {detected}")
     
-    if "game_jobs" not in tables_found:
-        print("⚠️ ERROR CRÍTIC: No s'ha trobat la taula 'game_jobs'! Revisa els imports.")
+    if "game_jobs" not in detected:
+        print("⚠️ WARNING: 'game_jobs' not found! Forcing registration...")
     
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        print("✅ Taules creades/verificades correctament!")
+        print("✅ Database tables created/verified!")
     except Exception as e:
-        print(f"❌ Error creant taules: {e}")
+        print(f"❌ Database error: {e}")
         raise
     
     yield
