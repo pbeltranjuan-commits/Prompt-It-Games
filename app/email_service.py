@@ -1,20 +1,23 @@
-import base64
-from app.config import get_settings
-
-settings = get_settings()
-
 async def send_game_zip(to_email: str, zip_path: str, game_name: str):
     """
-    MODE DE PROVES: No envia email real
-    Només genera el ZIP i imprimeix info
+    MODE DE PROVES - NO ENVIA EMAILS REALS
+    Només simula l'enviament i imprimeix logs
     """
-    print(f"📧 EMAIL SIMULAT (mode proves)")
-    print(f"📧 Destinatari: {to_email}")
-    print(f"📦 ZIP generat: {zip_path}")
+    print("=" * 50)
+    print("📧 EMAIL SIMULAT (sense domini verificat)")
+    print("=" * 50)
+    print(f" Destinatari: {to_email}")
+    print(f"📦 Arxiu ZIP: {zip_path}")
     print(f"🎮 Joc: {game_name}")
-    print(f"💡 NOTA: Per enviar emails reals, necessites:")
-    print(f"   1. Un domini verificat a Resend.com")
-    print(f"   2. O utilitzar un servei alternatiu")
+    print("=" * 50)
+    print("💡 Per activar emails reals:")
+    print("   1. Ves a Resend.com")
+    print("   2. Verifica un domini")
+    print("   3. Actualitza aquest fitxer")
+    print("=" * 50)
     
-    # Retorna èxit sense enviar res
-    return {"status": "simulated", "message": "Email simulation complete"}
+    # Retorna èxit sense intentar enviar res
+    return {
+        "status": "simulated",
+        "message": "Email simulation complete - no real email sent"
+    }
