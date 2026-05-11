@@ -72,7 +72,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 # ==============================================================================
-# NOU ENDPOINT: GENERACIÓ COMPLETA + EMAIL (La Màgia Real)
+# NOU ENDPOINT: GENERACIÓ COMPLETA + EMAIL (Amb 3 Categories)
 # NOTA: Autenticació desactivada temporalment per a proves
 # ==============================================================================
 
@@ -80,13 +80,18 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 async def generate_full_game(
     theme: str,
     difficulty: str = "medium",
+    game_category: str = "board",  # NOU: "board", "card_game" o "rpg"
     user_email: str = "pbeltranjuan@gmail.com",
     db: AsyncSession = Depends(get_db),
     # user_id: str = Depends(get_current_user)  # ← COMENTAT PER PROVES
 ):
     """
-    Flux complet (versió de proves sense auth):
-    1. Genera cartes i taulers (PNGs 300 DPI)
+    Flux complet amb 3 categories de joc:
+    - board: Jocs de taula (taulers + fitxes)
+    - card_game: Jocs de cartes (baralles completes)
+    - rpg: Jocs de rol (fulls de personatge tipus revista)
+    
+    1. Genera assets segons la categoria
     2. Crea un ZIP amb tots els assets
     3. L'envia per correu a l'usuari
     4. Neteja els fitxers temporals
@@ -95,29 +100,48 @@ async def generate_full_game(
     os.makedirs(output_dir, exist_ok=True)
 
     try:
-        logger.info("start_generation", theme=theme, difficulty=difficulty)
+        logger.info("start_generation", theme=theme, difficulty=difficulty, category=game_category)
 
-        # 1. GENERAR ASSETS (Simulació d'IA per ara)
-        # Generem 2 cartes tipus Poker
-        generate_card("poker", f"{theme} - Atac", f"Acció ofensiva de nivell {difficulty}")
-        generate_card("poker", f"{theme} - Defensa", f"Acció defensiva de nivell {difficulty}")
+        # === GENERACIÓ SEGONS CATEGORIA ===
         
-        # Generem 1 tauler 8x8
-        generate_board("square_8", f"Tauler: {theme}")
+        if game_category == "board":
+            # 🎲 JOCS DE TAULA (el que ja tenies)
+            logger.info("🎲 Generant Joc de Taula...")
+            generate_card("poker", f"{theme} - Atac", f"Acció ofensiva de nivell {difficulty}")
+            generate_card("poker", f"{theme} - Defensa", f"Acció defensiva de nivell {difficulty}")
+            generate_board("square_8", f"Tauler: {theme}")
 
-        # 2. COMPRIMIR EN ZIP
-        zip_name = f"{theme.replace(' ', '_')}_assets.zip"
+        elif game_category == "card_game":
+            # 🃏 JOCS DE CARTES (NOU - Baralla completa)
+            logger.info("🃏 Generant Joc de Cartes...")
+            # Generem una baralla de 20 cartes (pots ajustar aquest número)
+            for i in range(1, 21):
+                generate_card("poker", f"{theme} - Carta {i}", f"Efecte especial {difficulty}")
+
+        elif game_category == "rpg":
+            # 📜 JOCS DE ROL (NOU - Fulls de personatge)
+            logger.info("📜 Generant Joc de Rol (Character Sheets)...")
+            # Generem 4 fulls de personatge tipus A4 (pots ajustar)
+            for i in range(1, 5):
+                generate_board("a4_sheet", f"{theme} - Personatge {i}\nClasse: {difficulty}")
+
+        else:
+            raise ValueError(f"Categoria '{game_category}' no reconeguda. Usa: board, card_game, rpg")
+
+        # === COMPRIMIR EN ZIP ===
+        zip_name = f"{theme.replace(' ', '_')}_{game_category}.zip"
         zip_path = create_zip(output_dir, zip_name)
         logger.info("zip_created", path=zip_path)
 
-        # 3. ENVIAR PER CORREU
-        await send_game_zip(user_email, zip_path, theme)
+        # === ENVIAR PER CORREU (Simulat) ===
+        await send_game_zip(user_email, zip_path, f"{theme} ({game_category})")
         logger.info("email_sent", to=user_email)
 
         return {
-            "message": "✅ Joc generat i enviat al correu!", 
+            "message": f"✅ {game_category} generat i enviat!", 
             "zip_name": zip_name,
-            "sent_to": user_email
+            "sent_to": user_email,
+            "category": game_category
         }
     
     except Exception as e:
@@ -125,7 +149,7 @@ async def generate_full_game(
         raise HTTPException(status_code=500, detail=f"Error intern: {str(e)}")
     
     finally:
-        # 4. NETEJA: Esborra la carpeta temporal per no saturar Render
+        # === NETEJA: Esborra la carpeta temporal ===
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
             logger.info("temp_files_cleaned")
