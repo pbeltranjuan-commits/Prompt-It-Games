@@ -1,4 +1,5 @@
 import resend
+import base64
 import os
 from app.config import get_settings
 
@@ -10,17 +11,20 @@ async def send_game_zip(to_email: str, zip_path: str, game_name: str):
     try:
         with open(zip_path, "rb") as f:
             file_content = f.read()
+        
+        # Resend requereix el contingut en format Base64
+        content_base64 = base64.b64encode(file_content).decode('utf-8')
 
         params = resend.Emails.SendParams(
-            from_="onboarding@resend.dev",  # Canvia-ho quan verifiquis domini
+            from_="onboarding@resend.dev",
             to=[to_email],
-            subject=f"🎲 Assets llestos: {game_name}",
+            subject=f" Assets llestos: {game_name}",
             html="<h1>El teu joc està llest per imprimir!</h1><p>Trobaràs tots els PNGs dins el ZIP adjunt.</p>",
             attachments=[
-                resend.Emails.Attachment(
-                    filename=f"{game_name.replace(' ', '_')}_assets.zip",
-                    content=list(file_content)
-                )
+                {
+                    "filename": f"{game_name.replace(' ', '_')}_assets.zip",
+                    "content": content_base64
+                }
             ],
         )
         email = resend.Emails.send(params)
